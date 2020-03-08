@@ -13,9 +13,6 @@
         /// <param name="disposing">истинно, если управляемый ресурс должен быть удален; иначе ложно.</param>
         protected override void Dispose(bool disposing)
         {
-            ClientSocket.Shutdown(System.Net.Sockets.SocketShutdown.Both);
-            ClientSocket.Close();
-
             if (disposing && (components != null))
             {
                 components.Dispose();

@@ -28,8 +28,6 @@ namespace GameClient
 
                             var server = new Server("127.0.0.1", port);
                             server.Start();
-
-                            //Application.Run();
                         }
             }
             else

@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A3B1E7E0-83A9-457F-890E-7FE6C801037A}</ProjectGuid>
+    <ProjectGuid>{2037D184-BA2A-494C-9083-BA6898DFE528}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GameServer</RootNamespace>
-    <AssemblyName>ShooterServer</AssemblyName>
+    <RootNamespace>GameShared</RootNamespace>
+    <AssemblyName>GameShared</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -41,15 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PlayerMP.cs" />
-    <Compile Include="Server.cs" />
+    <Compile Include="Packet.cs" />
+    <Compile Include="PlayerSP.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\GameShared.prj\GameShared.csproj">
-      <Project>{2037d184-ba2a-494c-9083-ba6898dfe528}</Project>
-      <Name>GameShared</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

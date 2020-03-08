@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace GameServer
 {
-    internal enum PacketTypes
-    {
-        PLAYER,
-        BULLET,
-        MESSAGE
-    }
 
     internal class SocketData
     {
@@ -26,12 +22,12 @@ namespace GameServer
     public class Server
     {
         private Socket ServerSocket { get; set; }
-        private List<SocketData> Connections { get; set; }
+        private List<PlayerMP> Players { get; set; }
 
         public Server(string ip, int port)
         {
 
-            Connections = new List<SocketData>();
+            Players = new List<PlayerMP>();
 
             ServerSocket = new Socket(
                 AddressFamily.InterNetwork,
@@ -61,19 +57,34 @@ namespace GameServer
                 {
                     case "status":
                         Console.WriteLine($"Server works on {lEndPoint.Port} port");
-                        Console.WriteLine($"Now server has {Connections.Count} players:");
-                        foreach (var item in Connections)
+                        Console.WriteLine($"Now server has {Players.Count} players:");
+                        foreach (var item in Players)
                         {
-                            Console.WriteLine("- " + (IPEndPoint)item.SocketConnection.RemoteEndPoint);
+                            Console.WriteLine(" - " + (IPEndPoint)item.Connection.SocketConnection.RemoteEndPoint);
                         }
 
                         break;
-                    case "helloworld":
-                        foreach (var item in Connections)
+                    case "test":
+                        foreach (var item in Players)
                         {
                             byte[] data = Encoding.Unicode.GetBytes("Hello, World! :)");
-                            item.SocketConnection.Send(data);
+                            item.Connection.SocketConnection.Send(data);
                         }
+
+                        Console.WriteLine($"Sending \"Hello World\" message to all clients!" +
+                            $" {Players.Count} players are recieved message!");
+                        break;
+                    case "help":
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("Command List:");
+                        Console.WriteLine("status - Get info about current connections.");
+                        Console.WriteLine("test - Send a test message to all players.");
+                        Console.ResetColor();
+                        break;
+                    default:
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Unknown command \"{command.ToLower()}\". Type \"help\" to get list of all available commands.");
+                        Console.ResetColor();
                         break;
                 }
             }
@@ -91,7 +102,7 @@ namespace GameServer
                 var socketData = new SocketData();
                 socketData.SocketConnection = userSocket;
 
-                Connections.Add(socketData);
+                Players.Add(new PlayerMP(socketData));
 
                 userSocket.BeginReceive(
                     socketData.buffer,
@@ -118,6 +129,24 @@ namespace GameServer
             try
             {
                 read = s.EndReceive(ar);
+                Console.WriteLine($"{(IPEndPoint)s.RemoteEndPoint} sent {read} bytes");
+
+                var bf = new BinaryFormatter();
+                var packet = (GameShared.Packet)bf.Deserialize(new MemoryStream(so.buffer));
+
+                switch (packet.Type)
+                {
+                    case GameShared.PacketType.PLAYER:
+                        Console.WriteLine($"Server get player {(GameShared.PlayerSP)packet.Content}");
+                        break;
+                    case GameShared.PacketType.BULLET:
+                        break;
+                    case GameShared.PacketType.MESSAGE:
+                        Console.WriteLine($"Server get message: \"{(string)packet.Content}\"");
+                        break;
+                    default:
+                        break;
+                }
             }
             catch
             {
@@ -139,7 +168,7 @@ namespace GameServer
                     var whoAre = (IPEndPoint)so.SocketConnection.RemoteEndPoint;
                     Console.WriteLine($"Disconnected {whoAre}");
 
-                    Connections.Remove(so);
+                    Players.Remove(Players.Where(x=>x.Connection.Equals(so)).FirstOrDefault());
 
                     s.Close();
                 }

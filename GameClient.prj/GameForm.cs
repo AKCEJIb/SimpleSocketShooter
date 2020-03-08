@@ -1,11 +1,15 @@
-﻿using System;
+﻿using GameShared;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -14,61 +18,79 @@ namespace GameClient
 {
     public partial class GameForm : Form
     {
-        private Socket ClientSocket { get; set; }
-        private byte[] _buffer = new byte[1024];
+        private World LocalWorld { get; set; }
+        private PlayerSP LocalPlayer { get; set; }
+
+        private Client Client { get; set; }
         public GameForm()
         {
             InitializeComponent();
 
-            IPEndPoint ipPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 23333);
-            ClientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            ClientSocket.Connect(ipPoint);
-
-            ClientSocket.BeginReceive(_buffer, 0, 1024, SocketFlags.None, new AsyncCallback(OnReceivePacket), ClientSocket);
-
+            LocalWorld = World.GetInstance();
+            Client = new Client("127.0.0.1", 23333);
+            LocalPlayer = new PlayerSP("Test", 100, 0, 0);
         }
 
-        private void OnReceivePacket(IAsyncResult ar)
-        {
-            Socket server = (Socket)ar.AsyncState;
-
-            int bytesRead = server.EndReceive(ar);
-            var sb = new StringBuilder();
-
-            if (bytesRead > 0)
-            {
-                sb.Append(Encoding.Unicode.GetString(_buffer, 0, bytesRead));
-
-                server.BeginReceive(_buffer, 0, 1024, 0,
-                    new AsyncCallback(OnReceivePacket), server);
-
-                if (sb.Length > 1)
-                {
-                    Console.WriteLine(sb.ToString());
-                }
-            }
-            else
-            {
-                if (sb.Length > 1)
-                {
-                    Console.WriteLine(sb.ToString());
-                }
-              
-            }
-        }
+        
 
         private void ConnectBtn_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrEmpty(_nickTBox.Text))
             {
-                byte[] data = Encoding.Unicode.GetBytes(_nickTBox.Text);
-                ClientSocket.Send(data);
+                try
+                {
+                    LocalPlayer.SetName(_nickTBox.Text);
+
+                    _connectBtn.Enabled = false;
+                    Client.Connect();
+
+                    LocalWorld.AddPlayer(LocalPlayer);
+
+                    using (var ms = new MemoryStream())
+                    {
+
+                        var bf = new BinaryFormatter();
+                        bf.Serialize(ms, new Packet{
+                            Type = PacketType.PLAYER,
+                            Content = LocalPlayer });
+
+                        //GZipStream gz = new GZipStream(ms, CompressionLevel.Optimal);
+
+                        //var buff = new byte[1024];
+                        //gz.Write(buff, 0, buff.Length);
+
+                        Client.Send(ms.ToArray());
+
+                        Client.SendPacket(new Packet
+                        {
+                            Type = PacketType.MESSAGE,
+                            Content = "Hello, World!"
+                        });
+                    }
+                
+                }
+                catch(Client.ConnectionException ex)
+                {
+                    MessageBox.Show($"Не могу присоединится :(\n{ex.Message}",
+                        "Ошибка!",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    _connectBtn.Enabled = true;
+                }
+                catch(Exception ex)
+                {
+                    MessageBox.Show($"Неожиданная ошибка :(\n{ex.Message}",
+                        "Ошибка!",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+                
             }
             else
             {
                 MessageBox.Show(
                     "Пожалуйста, введите имя :)",
-                    "Опшивка!",
+                    "Ошибка!",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
