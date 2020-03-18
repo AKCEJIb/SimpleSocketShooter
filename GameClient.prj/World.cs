@@ -1,11 +1,10 @@
-﻿using GameShared;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GameClient
+namespace Game.Client
 {
     public class World
     {

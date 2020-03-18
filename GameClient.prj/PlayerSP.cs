@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GameShared
+namespace Game.Client
 {
     [Serializable]
     public class PlayerSP

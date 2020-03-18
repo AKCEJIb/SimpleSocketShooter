@@ -1,4 +1,4 @@
-﻿using GameShared;
+﻿using Game.Networking;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,86 +14,54 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace GameClient
+namespace Game.Client
 {
     public partial class GameForm : Form
     {
         private World LocalWorld { get; set; }
         private PlayerSP LocalPlayer { get; set; }
 
-        private Client Client { get; set; }
+        private GameTcpClient ClientSocket;
         public GameForm()
         {
             InitializeComponent();
-
-            LocalWorld = World.GetInstance();
-            Client = new Client("127.0.0.1", 23333);
-            LocalPlayer = new PlayerSP("Test", 100, 0, 0);
+            ClientSocket = new GameTcpClient();
+            ClientSocket.ConnectCompleted += ClientSocket_ConnectCompleted;
+            ClientSocket.SendCompleted += ClientSocket_SendCompleted;
+            ClientSocket.ReadCompleted += ClientSocket_ReadCompleted;
         }
 
-        
-
-        private void ConnectBtn_Click(object sender, EventArgs e)
+        private void ClientSocket_ReadCompleted(object sender, TcpCompletedEventArgs e)
         {
-            if (!string.IsNullOrEmpty(_nickTBox.Text))
+            if (!e.Error)
             {
-                try
-                {
-                    LocalPlayer.SetName(_nickTBox.Text);
+                Console.WriteLine($"Read event, bytes: {(int)e.Data}");
 
-                    _connectBtn.Enabled = false;
-                    Client.Connect();
-
-                    LocalWorld.AddPlayer(LocalPlayer);
-
-                    using (var ms = new MemoryStream())
-                    {
-
-                        var bf = new BinaryFormatter();
-                        bf.Serialize(ms, new Packet{
-                            Type = PacketType.PLAYER,
-                            Content = LocalPlayer });
-
-                        //GZipStream gz = new GZipStream(ms, CompressionLevel.Optimal);
-
-                        //var buff = new byte[1024];
-                        //gz.Write(buff, 0, buff.Length);
-
-                        Client.Send(ms.ToArray());
-
-                        Client.SendPacket(new Packet
-                        {
-                            Type = PacketType.MESSAGE,
-                            Content = "Hello, World!"
-                        });
-                    }
-                
-                }
-                catch(Client.ConnectionException ex)
-                {
-                    MessageBox.Show($"Не могу присоединится :(\n{ex.Message}",
-                        "Ошибка!",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                    _connectBtn.Enabled = true;
-                }
-                catch(Exception ex)
-                {
-                    MessageBox.Show($"Неожиданная ошибка :(\n{ex.Message}",
-                        "Ошибка!",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                }
-                
+                var buffer = new byte[1024];
+                ClientSocket.ReadAsync(buffer, 0, buffer.Length);
             }
             else
             {
-                MessageBox.Show(
-                    "Пожалуйста, введите имя :)",
-                    "Ошибка!",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
+                ClientSocket.AbortiveClose();
+                Console.WriteLine("Server was closed!");
             }
+        }
+
+        private void ClientSocket_SendCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            Console.WriteLine("Send event");
+        }
+
+        private void ClientSocket_ConnectCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            Console.WriteLine("Connected :3");
+        }
+
+        private void ConnectBtn_Click(object sender, EventArgs e)
+        {
+            ClientSocket.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 23333));
+            var buffer = new byte[1024];
+            ClientSocket.ReadAsync(buffer, 0, buffer.Length);
         }
     }
 }

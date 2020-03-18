@@ -1,4 +1,4 @@
-﻿namespace GameClient
+﻿namespace Game.Client
 {
     partial class GameForm
     {

@@ -1,4 +1,4 @@
-﻿using GameServer;
+﻿using Game.Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace GameClient
+namespace Game
 {
     static class Program
     {
@@ -26,7 +26,7 @@ namespace GameClient
                         if (!string.IsNullOrEmpty(args[2])){
                             var port = int.Parse(args[2]);
 
-                            var server = new Server("127.0.0.1", port);
+                            var server = new GameServer(port);
                             server.Start();
                         }
             }
@@ -34,7 +34,7 @@ namespace GameClient
             {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new GameForm());
+                Application.Run(new Client.GameForm());
             }
         }
     }
