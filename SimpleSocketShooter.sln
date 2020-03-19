@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game.Client", "GameClient.p
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game.Server", "GameServer.prj\Game.Server.csproj", "{A3B1E7E0-83A9-457F-890E-7FE6C801037A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game.Networking", "GameShared.prj\Game.Networking.csproj", "{2037D184-BA2A-494C-9083-BA6898DFE528}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game.Networking", "GameNetworking.prj\Game.Networking.csproj", "{2037D184-BA2A-494C-9083-BA6898DFE528}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
