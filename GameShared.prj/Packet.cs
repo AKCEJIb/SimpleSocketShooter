@@ -33,6 +33,16 @@ namespace Game.Networking
             }
         }
 
+        public static byte[] Serialize(Packet packet)
+        {
+            using (var ms = new MemoryStream())
+            {
+                var bf = new BinaryFormatter();
+                bf.Serialize(ms, packet);
+                return ms.ToArray();
+            }
+        }
+
         public static Packet Deserialize(byte[] bytes)
         {
             using(var ms = new MemoryStream(bytes))

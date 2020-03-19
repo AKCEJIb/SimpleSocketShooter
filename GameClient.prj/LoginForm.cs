@@ -52,7 +52,8 @@ namespace Game.Client
 
         private void PacketProtocol_PacketArrived(object sender, TcpCompletedEventArgs e)
         {
-            Console.WriteLine(Packet.Deserialize((byte[])e.Data).Content);
+            var packet = Packet.Deserialize((byte[])e.Data);
+            Console.WriteLine(packet.Content);
         }
 
         private void ConnectBtn_Click(object sender, EventArgs e)
