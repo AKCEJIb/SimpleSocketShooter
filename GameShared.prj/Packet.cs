@@ -10,9 +10,10 @@ namespace Game.Networking
 {
     public enum PacketType
     {
-        PLAYER = 10,
-        BULLET = 20,
-        MESSAGE = 30
+        PLAYER_POS = 10,
+        BULLET_POS = 20,
+        SYSTEM_MESSAGE = 30,
+        CHAT_MESSAGE = 40
     }
 
     [Serializable]
@@ -29,6 +30,15 @@ namespace Game.Networking
             {
                 bf.Serialize(ms, this);
                 return ms.ToArray();
+            }
+        }
+
+        public static Packet Deserialize(byte[] bytes)
+        {
+            using(var ms = new MemoryStream(bytes))
+            {
+                var bf = new BinaryFormatter();
+                return (Packet)bf.Deserialize(ms);
             }
         }
     }

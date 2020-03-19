@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Game.Networking
@@ -29,7 +30,7 @@ namespace Game.Networking
             Socket.BeginReceive(buffer,
                 offset,
                 size,
-                SocketFlags.None, 
+                SocketFlags.None,
                 new AsyncCallback(TryRead),
                 null);
         }
@@ -50,8 +51,8 @@ namespace Game.Networking
 
         private void TrySend(IAsyncResult ar)
         {
-            Socket.EndSend(ar);
-            SendCompleted?.Invoke(this, new TcpCompletedEventArgs());
+            var size = Socket.EndSend(ar);
+            SendCompleted?.Invoke(this, new TcpCompletedEventArgs(size));
         }
 
         public void SetAbortive()
@@ -63,5 +64,9 @@ namespace Game.Networking
         {
             Socket.Close();
         }
+
+        public IPEndPoint LocalEndPoint => (IPEndPoint)Socket.LocalEndPoint;
+
+        public IPEndPoint RemoteEndPoint => (IPEndPoint)Socket.RemoteEndPoint;
     }
 }

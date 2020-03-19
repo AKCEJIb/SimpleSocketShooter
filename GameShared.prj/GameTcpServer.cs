@@ -15,6 +15,9 @@ namespace Game.Networking
     {
         private readonly GameTcpSocketImpl Socket;
 
+        public IPEndPoint LocalEndPoint => Socket.LocalEndPoint;
+        public IPEndPoint RemoteEndPoint => Socket.RemoteEndPoint;
+
         public event EventHandler<TcpCompletedEventArgs> ReadCompleted;
         public event EventHandler<TcpCompletedEventArgs> SendCompleted;
 
@@ -62,6 +65,8 @@ namespace Game.Networking
         public event EventHandler<TcpCompletedEventArgs> ClientAccepted;
         private Socket Socket { get; set; }
 
+        public IPEndPoint LocalEndPoint => (IPEndPoint)Socket.LocalEndPoint;
+
         public GameTcpServerImpl()
         {
             Socket = new Socket(
@@ -98,7 +103,6 @@ namespace Game.Networking
     {
         public event EventHandler<TcpCompletedEventArgs> AcceptCompleted;
         private GameTcpServerImpl Socket_;
-
         private GameTcpServerImpl Socket
         {
             get
@@ -113,7 +117,7 @@ namespace Game.Networking
                 return Socket_;
             }
         }
-
+        public IPEndPoint LocalEndPoint => Socket.LocalEndPoint;
         public void Bind(IPEndPoint bindTo, int backlog)
         {
             Socket.Bind(bindTo, backlog);
@@ -137,6 +141,7 @@ namespace Game.Networking
         {
             Close();
         }
+       
 
         public void Close()
         {

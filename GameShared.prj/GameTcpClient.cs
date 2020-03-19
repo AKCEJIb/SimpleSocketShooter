@@ -13,19 +13,19 @@ namespace Game.Networking
         public GameTcpClientImpl()
             : base(new Socket(AddressFamily.InterNetwork,
                 SocketType.Stream,
-                ProtocolType.Tcp)){}
+                ProtocolType.Tcp)) { }
 
         public event EventHandler<TcpCompletedEventArgs> ConnectCompleted;
 
         public void ConnectAsync(IPEndPoint server)
         {
-            Socket.BeginConnect(server, new AsyncCallback(TryConnect), null);
+            Socket.BeginConnect(server, new AsyncCallback(TryConnect), server);
         }
 
         private void TryConnect(IAsyncResult ar)
         {
             Socket.EndConnect(ar);
-            ConnectCompleted?.Invoke(this, new TcpCompletedEventArgs());
+            ConnectCompleted?.Invoke(this, new TcpCompletedEventArgs(ar.AsyncState));
         }
     }
 
@@ -53,6 +53,29 @@ namespace Game.Networking
             }
         }
 
+        private void EnsureOpen()
+        {
+            if (Socket_ == null)
+                throw new InvalidOperationException("Socket is not open.");
+        }
+
+        public IPEndPoint LocalEndPoint
+        { 
+            get
+            {
+                EnsureOpen();
+                return Socket.LocalEndPoint;
+            }
+        }
+
+        public IPEndPoint RemoteEndPoint
+        {
+            get
+            {
+                EnsureOpen();
+                return Socket.RemoteEndPoint;
+            }
+        }
         public void ConnectAsync(IPEndPoint server)
         {
             Socket.ConnectAsync(server);

@@ -15,11 +15,17 @@ namespace Game.Server
    
     public class GameServer
     {
+
+        private class ClientContext
+        {
+            public PacketProtocol PacketProtocol { get; set; }
+            public bool Connected;
+        }
         private GameTcpServer ServerSocket;
-        private List<GameTcpServerConnection> connections;
+        private Dictionary<GameTcpServerConnection, ClientContext> clients =
+            new Dictionary<GameTcpServerConnection, ClientContext>();
         public GameServer(int port)
         {
-            connections = new List<GameTcpServerConnection>();
             ServerSocket = new GameTcpServer();
             ServerSocket.Bind(port, 2);
             ServerSocket.AcceptCompleted += ServerSocket_AcceptCompleted;
@@ -27,25 +33,44 @@ namespace Game.Server
 
         private void ServerSocket_AcceptCompleted(object sender, TcpCompletedEventArgs e)
         {
-            Console.WriteLine("Someone connected :)");
-
             ServerSocket.ClientAcceptAsync();
 
             var client = (GameTcpServerConnection) e.Data;
 
-            connections.Add(client);
+
+            var protocol = new PacketProtocol(client);
+            var context = new ClientContext();
+            context.PacketProtocol = protocol;
+            context.Connected = true;
+
+            clients.Add(client, context);
+
+            protocol.PacketArrived += Protocol_PacketArrived;
             client.SendCompleted += Client_SendCompleted;
-            client.ReadCompleted += Client_ReadCompleted;
+
+            protocol.Start();
+        }
+
+        private void Protocol_PacketArrived(object sender, TcpCompletedEventArgs e)
+        {
+            Console.WriteLine(Packet.Deserialize((byte[])e.Data).Content);
         }
 
         private void Client_ReadCompleted(object sender, TcpCompletedEventArgs e)
         {
-            Console.WriteLine("Read event");
+            if (!e.Error)
+            {
+                Console.WriteLine($"Read event, bytes read: {e.Data}");
+            }
+            else
+            {
+                Console.WriteLine("Client disconnected!");
+            }
         }
 
         private void Client_SendCompleted(object sender, TcpCompletedEventArgs e)
         {
-            Console.WriteLine("Send event");
+            Console.WriteLine($"Send event, bytes sent: {(int)e.Data}");
         }
 
         public void Start()
@@ -57,10 +82,14 @@ namespace Game.Server
             while (true)
             {
                 var str = Console.ReadLine();
-                Console.WriteLine(connections.Count);
-                foreach(var con in connections)
+
+                foreach(KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
                 {
-                    con.SendAsync(new byte[] { 0,1,1,0 });
+                    PacketProtocol.SendPacket(client.Key, new Packet
+                    {
+                        Content = str,
+                        Type = PacketType.MESSAGE
+                    });
                 }
             }
         }
