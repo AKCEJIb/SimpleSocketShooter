@@ -30,11 +30,6 @@ namespace Game.Client
             ClientSocket = new GameTcpClient();
             ClientSocket.ConnectCompleted += ClientSocket_ConnectCompleted;
             ClientSocket.SendCompleted += ClientSocket_SendCompleted;
-            //ClientSocket.ReadCompleted += ClientSocket_ReadCompleted;
-        }
-
-        private void ClientSocket_ReadCompleted(object sender, TcpCompletedEventArgs e)
-        {
         }
 
         private void ClientSocket_SendCompleted(object sender, TcpCompletedEventArgs e)
@@ -71,7 +66,7 @@ namespace Game.Client
             PacketProtocol.SendPacket(ClientSocket, new Packet
             {
                 Content = "From client to server :3",
-                Type = PacketType.MESSAGE
+                Type = PacketType.SYSTEM_MESSAGE
             });
         }
     }

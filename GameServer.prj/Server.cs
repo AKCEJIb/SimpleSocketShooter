@@ -88,7 +88,7 @@ namespace Game.Server
                     PacketProtocol.SendPacket(client.Key, new Packet
                     {
                         Content = str,
-                        Type = PacketType.MESSAGE
+                        Type = PacketType.SYSTEM_MESSAGE
                     });
                 }
             }

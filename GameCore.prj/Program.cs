@@ -1,5 +1,4 @@
-﻿using Game.Server;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -26,7 +25,7 @@ namespace Game
                         if (!string.IsNullOrEmpty(args[2])){
                             var port = int.Parse(args[2]);
 
-                            var server = new GameServer(port);
+                            var server = new Server.GameServer(port);
                             server.Start();
                         }
             }
