@@ -8,39 +8,82 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 
 namespace Game.Server
 {
    
     public class GameServer
     {
+        private static GameServer Instance { get; set; }
+        private Timer _timer = new Timer();
+        public static GameServer GetInstance()
+        {
+            return Instance ?? (Instance = new GameServer());
+        }
 
-        private class ClientContext
+        List<ITickingEntity> _tickingEntities = new List<ITickingEntity>();
+
+
+        internal class ClientContext
         {
             public PacketProtocol PacketProtocol { get; set; }
             public PlayerMp Player { get; set; }
             public bool Connected;
         }
+
         private GameTcpServer ServerSocket;
-        private Dictionary<GameTcpServerConnection, ClientContext> clients =
+
+        internal Dictionary<GameTcpServerConnection, ClientContext> clients =
             new Dictionary<GameTcpServerConnection, ClientContext>();
-        public GameServer(int port)
+        
+        private GameServer()
         {
             ServerSocket = new GameTcpServer();
+
+        }
+
+        public void SetPort(int port)
+        {
             ServerSocket.Bind(port, 2);
             ServerSocket.AcceptCompleted += ServerSocket_AcceptCompleted;
         }
-        public GameServer(IPAddress ip, int port)
+        public void SetAddress(IPAddress ip, int port)
         {
-            ServerSocket = new GameTcpServer();
             ServerSocket.Bind(ip, port, 2);
             ServerSocket.AcceptCompleted += ServerSocket_AcceptCompleted;
         }
 
+        internal void SendPacketByGuid(Packet packet, Guid guid)
+        {
+            var client = clients.Where(x => x.Value.Player.Guid == guid).FirstOrDefault();
+
+            PacketProtocol.SendPacket(client.Key, packet);
+        }
+
+        internal void BroadcastPacket(Packet packet, Guid excludeGuid)
+        {
+            foreach (KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
+            {
+                if (client.Value.Player.Guid == excludeGuid)
+                    continue;
+                PacketProtocol.SendPacket(client.Key, packet);
+            }
+        }
+
         private void CloseConnectionWithClient(GameTcpServerConnection socket)
         {
+            ClientContext clientContext;
+            clients.TryGetValue(socket, out clientContext);
+
+            if(clientContext != null)
+            {
+                clientContext.Player.SendDisconnect();
+
+                _tickingEntities.Remove(clientContext.Player);
+            }
+
             socket?.Close();
 
             clients.Remove(socket);
@@ -61,7 +104,7 @@ namespace Game.Server
             clients.Add(client, context);
 
             protocol.PacketArrived += Protocol_PacketArrived;
-            client.SendCompleted += Client_SendCompleted;
+            //client.SendCompleted += Client_SendCompleted;
 
             protocol.Start();
 
@@ -98,12 +141,23 @@ namespace Game.Server
                                 Content = context.Player,
                                 Type = PacketType.PLAYER_INFO
                             });
-                            break;
-                        case PacketType.BULLET_POS:
+
+                            _tickingEntities.Add(context.Player);
+
                             break;
                         case PacketType.SYSTEM_MESSAGE:
                             break;
                         case PacketType.CHAT_MESSAGE:
+                            break;
+                        case PacketType.PLAYER_STATE:
+                            break;
+                        case PacketType.PLAYER_MOVE:
+                            var contextMove = clients.Where(x => x.Key == clientSocket).FirstOrDefault().Value;
+                            contextMove.Player.AddPos((Vector2)packet.Content); 
+                            break;
+                        case PacketType.BULLET_STATE:
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -118,6 +172,11 @@ namespace Game.Server
         public void Start()
         {
             ServerSocket.ClientAcceptAsync();
+
+            _timer.Interval = 1000 / 64;
+            _timer.AutoReset = true;
+            _timer.Elapsed += Timer_Elapsed;
+            _timer.Start();
 
             Console.WriteLine($"Server started on {ServerSocket.LocalEndPoint}...");
             Console.WriteLine("Type \"help\" to get commands list...");
@@ -143,6 +202,22 @@ namespace Game.Server
                             });
                         }
                         break;
+                    case "setname":
+                        Console.Write("Rename player: ");
+                        var oldName = Console.ReadLine();
+
+                        var user = clients.Values.Where(x => x.Player.Name.Contains(oldName)).FirstOrDefault();
+
+                        if (user != null) { 
+                            Console.Write("New player name: ");
+                            var newName = Console.ReadLine();
+                            user.Player.SetName(newName);
+                            Console.WriteLine($"Player \"{oldName}\" renamed successfully to \"{newName}\"");
+                        }
+                        else
+                            Console.WriteLine("User not found!");
+
+                        break;
                     case "status":
                         if(clients.Count > 0)
                             foreach (KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
@@ -157,6 +232,14 @@ namespace Game.Server
                         Console.WriteLine("Type \"help\" to get commands list...");
                         break;
                 }
+            }
+        }
+
+        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            foreach (var entity in _tickingEntities)
+            {
+                entity.Tick();
             }
         }
     }

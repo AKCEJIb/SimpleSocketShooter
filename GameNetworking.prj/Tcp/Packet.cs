@@ -10,10 +10,15 @@ namespace Game.Networking
 {
     public enum PacketType
     {
-        PLAYER_INFO = 10,
-        BULLET_POS = 20,
-        SYSTEM_MESSAGE = 30,
-        CHAT_MESSAGE = 40
+        PLAYER_INFO,            // Тип пакета для отправки состояния конкретного игрока при соединении или обновлении информации
+        PLAYER_DISCONNECTED,    // Тип пакета для отправки состояния конкретного игрока при отсодинении
+        PLAYER_STATE,           // Тип пакета для отправки состояния остальных игроков
+        PLAYER_MOVE,            // Тип пакета для отправки попытки движения
+
+        BULLET_STATE,           // Тип пакета для отправки данных о пулях
+        
+        SYSTEM_MESSAGE,         // Тип пакета для системных сообщений
+        CHAT_MESSAGE,           // Тип пакета для сообщений чата
     }
 
     [Serializable]

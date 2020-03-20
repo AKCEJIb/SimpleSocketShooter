@@ -65,7 +65,8 @@ namespace Game
                     //    .Where(x => x.AddressFamily == AddressFamily.InterNetwork).
                     //    FirstOrDefault();
 
-                    var server = new Server.GameServer(port);
+                    var server = Server.GameServer.GetInstance();
+                    server.SetPort(port);
                     server.Start();
                 }
                 else
@@ -79,7 +80,7 @@ namespace Game
             {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new Client.LoginForm());
+                Application.Run(new Client.ClientForm());
             }
         }
     }

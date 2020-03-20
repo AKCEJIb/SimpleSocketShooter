@@ -41,7 +41,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entity\Entity.cs" />
+    <Compile Include="Entity\ITickingEntity.cs" />
     <Compile Include="Entity\PlayerShared.cs" />
+    <Compile Include="DataTypes\Vector2.cs" />
     <Compile Include="Tcp\GameTcpClient.cs" />
     <Compile Include="Tcp\GameTcpServer.cs" />
     <Compile Include="Tcp\GameTcpSocketImpl.cs" />
