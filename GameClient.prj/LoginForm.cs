@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace Game.Client
     public partial class LoginForm : Form
     {
         private World LocalWorld { get; set; }
-        private PlayerSP LocalPlayer { get; set; }
+        private PlayerSp LocalPlayer { get; set; }
 
         private GameTcpClient ClientSocket;
         private PacketProtocol PacketProtocol;
@@ -31,6 +32,13 @@ namespace Game.Client
 
             _nickTBox.KeyDown += new KeyEventHandler(NickTBox_KeyDown);
             _nickTBox.Select();
+
+            
+        }
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            _nickTBox.Text = LocalPlayer.Name;
         }
 
         private void NickTBox_KeyDown(object sender, KeyEventArgs e)
@@ -93,10 +101,7 @@ namespace Game.Client
 
                 PacketProtocol.SendPacket(ClientSocket, new Packet
                 {
-                    Content = new PlayerShared
-                    {
-                        Name = LocalPlayer.Name
-                    },
+                    Content = LocalPlayer,
                     Type = PacketType.PLAYER_INFO
                 });
 
@@ -110,6 +115,11 @@ namespace Game.Client
                 {
                     _disconnectBtn.Enabled = true;
                 }
+
+                var timer = new Timer();
+                timer.Interval = 500;
+                timer.Tick += Timer_Tick;
+                timer.Start();
             }
             else
             {
@@ -131,7 +141,12 @@ namespace Game.Client
                 var packet = bytePacket as Packet;
                 if (packet != null)
                 {
-                    Console.WriteLine(packet.Content);
+                    switch (packet.Type)
+                    {
+                        case PacketType.PLAYER_INFO:
+                            LocalPlayer.UpdatePlayer((PlayerShared)packet.Content);
+                            break;
+                    }
                 }
                 else
                 {
@@ -168,7 +183,7 @@ namespace Game.Client
                 return;
             }
 
-            LocalPlayer = new PlayerSP(_nickTBox.Text, 100, 0, 0);
+            LocalPlayer = new PlayerSp(_nickTBox.Text, 100, 0, 0);
 
             var splited = _ipTbox.Text.Split(':');
 

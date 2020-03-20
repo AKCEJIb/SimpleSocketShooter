@@ -9,10 +9,10 @@ namespace Game.Client
     public class World
     {
         private static World Instance { get; set; }
-        public List<PlayerSP> Players { get; private set; }
+        public List<PlayerSp> Players { get; private set; }
         private World()
         {
-            Players = new List<PlayerSP>();
+            Players = new List<PlayerSp>();
         }
 
         public static World GetInstance()
@@ -20,7 +20,7 @@ namespace Game.Client
             return Instance ?? (Instance = new World());
         }
 
-        public void AddPlayer(PlayerSP player)
+        public void AddPlayer(PlayerSp player)
         {
             Players.Add(player);
         }

@@ -20,7 +20,7 @@ namespace Game.Server
         private class ClientContext
         {
             public PacketProtocol PacketProtocol { get; set; }
-            public PlayerShared Player { get; set; }
+            public PlayerMp Player { get; set; }
             public bool Connected;
         }
         private GameTcpServer ServerSocket;
@@ -92,7 +92,12 @@ namespace Game.Server
                     {
                         case PacketType.PLAYER_INFO:
                             var context = clients.Where(x => x.Key == clientSocket).FirstOrDefault().Value;
-                            context.Player = (PlayerShared)packet.Content;
+                            context.Player = new PlayerMp((PlayerShared)packet.Content);
+                            PacketProtocol.SendPacket(clientSocket, new Packet
+                            {
+                                Content = context.Player,
+                                Type = PacketType.PLAYER_INFO
+                            });
                             break;
                         case PacketType.BULLET_POS:
                             break;
@@ -142,7 +147,7 @@ namespace Game.Server
                         if(clients.Count > 0)
                             foreach (KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
                             {
-                                Console.WriteLine($"PLAYER: {client.Value.Player.Name}; IP: {client.Key.RemoteEndPoint}");
+                                Console.WriteLine($"PLAYER: {client.Value.Player.Name}; IP: {client.Key.RemoteEndPoint}; Guid: {client.Value.Player.Guid}");
                             }
                         else
                             Console.WriteLine("No one client are connected!");
