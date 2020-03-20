@@ -8,6 +8,7 @@ namespace Game.Networking
     {
         public event EventHandler<TcpCompletedEventArgs> ReadCompleted;
         public event EventHandler<TcpCompletedEventArgs> SendCompleted;
+        public event EventHandler<TcpCompletedEventArgs> ShutdownCompleted;
         protected Socket Socket { get; private set; }
 
         public GameTcpSocketImpl(Socket socket)
@@ -63,6 +64,27 @@ namespace Game.Networking
         public void Dispose()
         {
             Socket.Close();
+        }
+
+        public void ShutdownAsync()
+        {
+            Socket.BeginDisconnect(false, new AsyncCallback(TryShutdown), null);
+        }
+
+        private void TryShutdown(IAsyncResult ar)
+        {
+            try
+            {
+                Socket.EndDisconnect(ar);
+                ShutdownCompleted?.Invoke(this, new TcpCompletedEventArgs());
+            }
+            catch (Exception ex)
+            {
+                var eventArgs = new TcpCompletedEventArgs(ex);
+                eventArgs.Error = true;
+
+                ShutdownCompleted?.Invoke(this, eventArgs);
+            }
         }
 
         public IPEndPoint LocalEndPoint => (IPEndPoint)Socket.LocalEndPoint;

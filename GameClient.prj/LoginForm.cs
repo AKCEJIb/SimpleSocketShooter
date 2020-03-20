@@ -1,4 +1,5 @@
 ﻿using Game.Networking;
+using Game.Networking.Entity;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -27,47 +28,168 @@ namespace Game.Client
         public LoginForm()
         {
             InitializeComponent();
-            ClientSocket = new GameTcpClient();
-            ClientSocket.ConnectCompleted += ClientSocket_ConnectCompleted;
-            ClientSocket.SendCompleted += ClientSocket_SendCompleted;
+
+            _nickTBox.KeyDown += new KeyEventHandler(NickTBox_KeyDown);
+            _nickTBox.Select();
         }
 
-        private void ClientSocket_SendCompleted(object sender, TcpCompletedEventArgs e)
+        private void NickTBox_KeyDown(object sender, KeyEventArgs e)
         {
-            Console.WriteLine($"Send event, bytes sent {(int)e.Data}");
+            if (e.KeyCode == Keys.Enter)
+            {
+                ConnectBtn_Click(sender, e);
+
+                e.SuppressKeyPress  = true;
+                e.Handled           = true;
+            }
+        }
+
+        private void EnableButtons()
+        {
+            if (_connectBtn.InvokeRequired)
+            {
+                _connectBtn.Invoke(new Action(() => {
+                    _connectBtn.Enabled     = true;
+                    _ipTbox.Enabled         = true;
+                    _nickTBox.Enabled       = true;
+                    _disconnectBtn.Enabled  = false;
+                }));
+            }
+            else
+            {
+                _connectBtn.Enabled     = true;
+                _ipTbox.Enabled         = true;
+                _nickTBox.Enabled       = true;
+                _disconnectBtn.Enabled  = false;
+            }
+        }
+
+        private void ClientSocket_ShutdownCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            Console.WriteLine("Disconnected from server.");
+
+            PacketProtocol.PacketArrived -= PacketProtocol_PacketArrived;
+
+            ClientSocket.ConnectCompleted -= ClientSocket_ConnectCompleted;
+            ClientSocket.ShutdownCompleted -= ClientSocket_ShutdownCompleted;
+
+            ClientSocket.Close();
+            ClientSocket = null;
+            PacketProtocol = null;
+
+            EnableButtons();
         }
 
         private void ClientSocket_ConnectCompleted(object sender, TcpCompletedEventArgs e)
         {
-            Console.WriteLine($"Connected to {(IPEndPoint)e.Data}");
-            PacketProtocol = new PacketProtocol(ClientSocket);
-            PacketProtocol.PacketArrived += PacketProtocol_PacketArrived;
-            PacketProtocol.Start();
+            if (!e.Error)
+            {
+                Console.WriteLine($"Connected to {(IPEndPoint)e.Data}");
+                PacketProtocol = new PacketProtocol(ClientSocket);
+                PacketProtocol.PacketArrived += PacketProtocol_PacketArrived;
+                PacketProtocol.Start();
+
+                Console.WriteLine("Sending client info...");
+
+                PacketProtocol.SendPacket(ClientSocket, new Packet
+                {
+                    Content = new PlayerShared
+                    {
+                        Name = LocalPlayer.Name
+                    },
+                    Type = PacketType.PLAYER_INFO
+                });
+
+                if (_disconnectBtn.InvokeRequired)
+                {
+                    _disconnectBtn.Invoke(new Action(() => {
+                        _disconnectBtn.Enabled = true;
+                    }));
+                }
+                else
+                {
+                    _disconnectBtn.Enabled = true;
+                }
+            }
+            else
+            {
+                MessageBox.Show($"Удалённый сервер не отвечает!",
+                    "Ошибка соединения",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                Console.WriteLine(e.Data);
+
+                EnableButtons();
+            }
         }
 
         private void PacketProtocol_PacketArrived(object sender, TcpCompletedEventArgs e)
         {
-            var packet = Packet.Deserialize((byte[])e.Data);
-            Console.WriteLine(packet.Content);
+            if (!e.Error)
+            {
+                var bytePacket = Packet.Deserialize((byte[])e.Data);
+                var packet = bytePacket as Packet;
+                if (packet != null)
+                {
+                    Console.WriteLine(packet.Content);
+                }
+                else
+                {
+                    Console.WriteLine($"Server send corrupted packet!");
+                }
+            }
+            else
+            {
+                MessageBox.Show($"Удалённый сервер принудительно разовал соединение!",
+                    "Ошибка соединения",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                EnableButtons();
+            }
         }
 
         private void ConnectBtn_Click(object sender, EventArgs e)
         {
+
+            if (string.IsNullOrEmpty(_ipTbox.Text))
+            {
+                MessageBox.Show("Введите IP:Порт адрес сервера!",
+                    "Ошибка соединения",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_nickTBox.Text)) { 
+                MessageBox.Show("Введите имя персонажа!",
+                    "Ошибка соединения",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            LocalPlayer = new PlayerSP(_nickTBox.Text, 100, 0, 0);
+
             var splited = _ipTbox.Text.Split(':');
+
+            ClientSocket = new GameTcpClient();
+            ClientSocket.ConnectCompleted += ClientSocket_ConnectCompleted;
+            ClientSocket.ShutdownCompleted += ClientSocket_ShutdownCompleted;
+
             ClientSocket.ConnectAsync(
                 new IPEndPoint(
                     IPAddress.Parse(splited[0]),
                     int.Parse(splited[1])));
-  
+
+            _connectBtn.Enabled     = false;
+            _ipTbox.Enabled         = false;
+            _nickTBox.Enabled       = false;
+            
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void DisconnectBtn_Click(object sender, EventArgs e)
         {
-            PacketProtocol.SendPacket(ClientSocket, new Packet
-            {
-                Content = "From client to server :3",
-                Type = PacketType.SYSTEM_MESSAGE
-            });
+            ClientSocket?.ShutdownAsync();
         }
     }
 }

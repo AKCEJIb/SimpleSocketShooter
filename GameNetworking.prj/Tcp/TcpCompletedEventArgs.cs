@@ -2,7 +2,7 @@
 {
     public class TcpCompletedEventArgs
     {
-        public object Data { get; }
+        public object Data { get; set; }
         public bool Error { get; set; }
 
         public TcpCompletedEventArgs()

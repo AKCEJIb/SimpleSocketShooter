@@ -10,7 +10,7 @@ namespace Game.Networking
 {
     public enum PacketType
     {
-        PLAYER_POS = 10,
+        PLAYER_INFO = 10,
         BULLET_POS = 20,
         SYSTEM_MESSAGE = 30,
         CHAT_MESSAGE = 40
@@ -43,7 +43,7 @@ namespace Game.Networking
             }
         }
 
-        public static Packet Deserialize(byte[] bytes)
+        public static object Deserialize(byte[] bytes)
         {
             using(var ms = new MemoryStream(bytes))
             {

@@ -41,14 +41,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GameTcpClient.cs" />
-    <Compile Include="GameTcpServer.cs" />
-    <Compile Include="GameTcpSocketImpl.cs" />
-    <Compile Include="IAsyncSocket.cs" />
-    <Compile Include="Packet.cs" />
-    <Compile Include="PacketProtocol.cs" />
+    <Compile Include="Entity\PlayerShared.cs" />
+    <Compile Include="Tcp\GameTcpClient.cs" />
+    <Compile Include="Tcp\GameTcpServer.cs" />
+    <Compile Include="Tcp\GameTcpSocketImpl.cs" />
+    <Compile Include="Tcp\IAsyncSocket.cs" />
+    <Compile Include="Tcp\Packet.cs" />
+    <Compile Include="Tcp\PacketProtocol.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TcpCompletedEventArgs.cs" />
+    <Compile Include="Tcp\TcpCompletedEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />

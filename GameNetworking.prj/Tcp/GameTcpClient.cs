@@ -24,8 +24,18 @@ namespace Game.Networking
 
         private void TryConnect(IAsyncResult ar)
         {
-            Socket.EndConnect(ar);
-            ConnectCompleted?.Invoke(this, new TcpCompletedEventArgs(ar.AsyncState));
+            try
+            {
+                Socket.EndConnect(ar);
+                ConnectCompleted?.Invoke(this, new TcpCompletedEventArgs(ar.AsyncState));
+            }
+            catch (Exception ex)
+            {
+                var eventArgs = new TcpCompletedEventArgs(ex);
+                eventArgs.Error = true;
+
+                ConnectCompleted?.Invoke(this, eventArgs);
+            }
         }
     }
 
@@ -34,6 +44,7 @@ namespace Game.Networking
         public event EventHandler<TcpCompletedEventArgs> ReadCompleted;
         public event EventHandler<TcpCompletedEventArgs> SendCompleted;
         public event EventHandler<TcpCompletedEventArgs> ConnectCompleted;
+        public event EventHandler<TcpCompletedEventArgs> ShutdownCompleted;
 
         private GameTcpClientImpl Socket_;
 
@@ -45,12 +56,33 @@ namespace Game.Networking
                     return Socket_;
 
                 Socket_ = new GameTcpClientImpl();
-                Socket_.ConnectCompleted += (s, e) => ConnectCompleted?.Invoke(s, e);
-                Socket_.ReadCompleted += (s, e) => ReadCompleted?.Invoke(s, e);
-                Socket_.SendCompleted += (s, e) => SendCompleted?.Invoke(s, e);
+                Socket_.ConnectCompleted += Socket__ConnectCompleted;
+                Socket_.ReadCompleted += Socket__ReadCompleted;
+                Socket_.SendCompleted += Socket__SendCompleted;
+                Socket_.ShutdownCompleted += Socket__ShutdownCompleted;
 
                 return Socket_;
             }
+        }
+
+        private void Socket__ShutdownCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            ShutdownCompleted?.Invoke(sender, e);
+        }
+
+        private void Socket__SendCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            SendCompleted?.Invoke(sender, e);
+        }
+
+        private void Socket__ReadCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            ReadCompleted?.Invoke(sender, e);
+        }
+
+        private void Socket__ConnectCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            ConnectCompleted?.Invoke(sender, e);
         }
 
         private void EnsureOpen()
@@ -80,9 +112,21 @@ namespace Game.Networking
         {
             Socket.ConnectAsync(server);
         }
-
+        private void FreeEvents()
+        {
+            FreeEventsExceptShutdown();
+            Socket_.ShutdownCompleted -= Socket__ShutdownCompleted;
+        }
+        private void FreeEventsExceptShutdown()
+        {
+            Socket_.ConnectCompleted -= Socket__ConnectCompleted;
+            Socket_.ReadCompleted -= Socket__ReadCompleted;
+            Socket_.SendCompleted -= Socket__SendCompleted;
+        }
         public void AbortiveClose()
         {
+            FreeEvents();
+
             Socket_.SetAbortive();
             Socket_.Dispose();
 
@@ -91,6 +135,8 @@ namespace Game.Networking
 
         public void Close()
         {
+            FreeEvents();
+
             Socket_.Dispose();
             Socket_ = null;
         }
@@ -113,6 +159,15 @@ namespace Game.Networking
         public void SendAsync(byte[] buffer)
         {
             Socket.SendAsync(buffer, 0, buffer.Length);
+        }
+
+        public void ShutdownAsync()
+        {
+            EnsureOpen();
+
+            FreeEventsExceptShutdown();
+
+            Socket.ShutdownAsync();
         }
     }
 }

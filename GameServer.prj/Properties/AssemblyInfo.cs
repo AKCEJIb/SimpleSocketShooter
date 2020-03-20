@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанные со сборкой.
-[assembly: AssemblyTitle("GameServer")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("SockerShooterServerLib")]
+[assembly: AssemblyDescription("Socket shooter server library")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("GameServer")]
-[assembly: AssemblyCopyright("Copyright ©  2020")]
+[assembly: AssemblyCompany("AxeleratorStudio")]
+[assembly: AssemblyProduct("SockerShooterServerLib")]
+[assembly: AssemblyCopyright("AxeleratorStudio ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -20,28 +20,59 @@ namespace Game.Networking
 
         public event EventHandler<TcpCompletedEventArgs> ReadCompleted;
         public event EventHandler<TcpCompletedEventArgs> SendCompleted;
+        public event EventHandler<TcpCompletedEventArgs> ShutdownCompleted;
 
         internal GameTcpServerConnection(Socket socket)
         {
             Socket = new GameTcpSocketImpl(socket);
-            Socket.ReadCompleted += (s, e) => ReadCompleted.Invoke(s, e);
-            Socket.SendCompleted += (s, e) => SendCompleted.Invoke(s, e);
+            Socket.ReadCompleted += Socket_ReadCompleted;
+            Socket.SendCompleted += Socket_SendCompleted;
+            Socket.ShutdownCompleted += Socket_ShutdownCompleted;
         }
+
+        private void Socket_SendCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            SendCompleted?.Invoke(sender, e);
+        }
+
+        private void Socket_ReadCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            ReadCompleted?.Invoke(sender, e);
+        }
+
+        private void Socket_ShutdownCompleted(object sender, TcpCompletedEventArgs e)
+        {
+            ShutdownCompleted?.Invoke(sender, e);
+        }
+
 
         public void AbortiveClose()
         {
+            FreeEvents();
             Socket.SetAbortive();
             Socket.Dispose();
         }
 
         public void Close()
         {
+            FreeEvents();
             Socket.Dispose();
         }
 
         public void Dispose()
         {
             Close();
+        }
+
+        private void FreeEvents()
+        {
+            FreeEventsExceptShutdown();
+            Socket.ShutdownCompleted -= Socket_ShutdownCompleted;
+        }
+        private void FreeEventsExceptShutdown()
+        {
+            Socket.ReadCompleted -= Socket_ReadCompleted;
+            Socket.SendCompleted -= Socket_SendCompleted;
         }
 
         public void ReadAsync(byte[] buffer, int offset, int size)
@@ -57,6 +88,12 @@ namespace Game.Networking
         public void SendAsync(byte[] buffer)
         {
             Socket.SendAsync(buffer, 0, buffer.Length);
+        }
+
+        public void ShutdownAsync()
+        {
+            FreeEventsExceptShutdown();
+            Socket.ShutdownAsync();
         }
     }
 

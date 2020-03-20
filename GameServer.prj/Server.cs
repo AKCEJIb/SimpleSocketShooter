@@ -1,4 +1,5 @@
 ﻿using Game.Networking;
+using Game.Networking.Entity;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,7 @@ namespace Game.Server
         private class ClientContext
         {
             public PacketProtocol PacketProtocol { get; set; }
+            public PlayerShared Player { get; set; }
             public bool Connected;
         }
         private GameTcpServer ServerSocket;
@@ -29,6 +31,19 @@ namespace Game.Server
             ServerSocket = new GameTcpServer();
             ServerSocket.Bind(port, 2);
             ServerSocket.AcceptCompleted += ServerSocket_AcceptCompleted;
+        }
+        public GameServer(IPAddress ip, int port)
+        {
+            ServerSocket = new GameTcpServer();
+            ServerSocket.Bind(ip, port, 2);
+            ServerSocket.AcceptCompleted += ServerSocket_AcceptCompleted;
+        }
+
+        private void CloseConnectionWithClient(GameTcpServerConnection socket)
+        {
+            socket?.Close();
+
+            clients.Remove(socket);
         }
 
         private void ServerSocket_AcceptCompleted(object sender, TcpCompletedEventArgs e)
@@ -49,22 +64,44 @@ namespace Game.Server
             client.SendCompleted += Client_SendCompleted;
 
             protocol.Start();
+
+            Console.WriteLine($"Client {client.RemoteEndPoint} connected to server.");
         }
 
         private void Protocol_PacketArrived(object sender, TcpCompletedEventArgs e)
         {
-            Console.WriteLine(Packet.Deserialize((byte[])e.Data).Content);
-        }
-
-        private void Client_ReadCompleted(object sender, TcpCompletedEventArgs e)
-        {
-            if (!e.Error)
+            var clientSocket = (GameTcpServerConnection)sender;
+            if (e.Error)
             {
-                Console.WriteLine($"Read event, bytes read: {e.Data}");
+                Console.WriteLine($"Server closed connection with client during error: {e.Data}");
+                CloseConnectionWithClient(clientSocket);
+            }
+            else if(e.Data == null)
+            {
+                Console.WriteLine($"Client {clientSocket.RemoteEndPoint} disconnected.");
+                CloseConnectionWithClient(clientSocket);
             }
             else
             {
-                Console.WriteLine("Client disconnected!");
+                var bytePacket = Packet.Deserialize((byte[])e.Data);
+                Packet packet = bytePacket as Packet;
+
+                if(packet != null)
+                {
+                    switch (packet.Type)
+                    {
+                        case PacketType.PLAYER_INFO:
+                            var context = clients.Where(x => x.Key == clientSocket).FirstOrDefault().Value;
+                            context.Player = (PlayerShared)packet.Content;
+                            break;
+                        case PacketType.BULLET_POS:
+                            break;
+                        case PacketType.SYSTEM_MESSAGE:
+                            break;
+                        case PacketType.CHAT_MESSAGE:
+                            break;
+                    }
+                }
             }
         }
 
@@ -77,19 +114,43 @@ namespace Game.Server
         {
             ServerSocket.ClientAcceptAsync();
 
-            Console.WriteLine("Server started");
+            Console.WriteLine($"Server started on {ServerSocket.LocalEndPoint}...");
+            Console.WriteLine("Type \"help\" to get commands list...");
 
             while (true)
             {
                 var str = Console.ReadLine();
 
-                foreach(KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
+                switch (str.ToLowerInvariant())
                 {
-                    PacketProtocol.SendPacket(client.Key, new Packet
-                    {
-                        Content = str,
-                        Type = PacketType.SYSTEM_MESSAGE
-                    });
+                    case "help":
+                        Console.WriteLine("Command List:");
+                        Console.WriteLine("test - Send test message to all connected clients.");
+                        Console.WriteLine("status - Get list of all connected clients.");
+                        break;
+                    case "test":
+                        foreach (KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
+                        {
+                            PacketProtocol.SendPacket(client.Key, new Packet
+                            {
+                                Content = "<TEST_MESSAGE>",
+                                Type = PacketType.SYSTEM_MESSAGE
+                            });
+                        }
+                        break;
+                    case "status":
+                        if(clients.Count > 0)
+                            foreach (KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
+                            {
+                                Console.WriteLine($"PLAYER: {client.Value.Player.Name}; IP: {client.Key.RemoteEndPoint}");
+                            }
+                        else
+                            Console.WriteLine("No one client are connected!");
+                        break;
+                    default:
+                        Console.WriteLine($"No such command \"{str}\"!");
+                        Console.WriteLine("Type \"help\" to get commands list...");
+                        break;
                 }
             }
         }

@@ -64,7 +64,7 @@ namespace Game.Networking
 
                 if((int)e.Data == 0)
                 {
-                    PacketArrived?.Invoke(this, new TcpCompletedEventArgs());
+                    PacketArrived?.Invoke(Socket, new TcpCompletedEventArgs());
                     return;
                 }
 
@@ -79,10 +79,12 @@ namespace Game.Networking
                         int len = BitConverter.ToInt32(lenghtBuffer, 0);
                         if(len < 0)
                         {
-                            PacketArrived?.Invoke(this, 
-                                new TcpCompletedEventArgs(
-                                new System.IO.InvalidDataException(
-                                    "Packet length less than zero (corrupted message)")));
+                            PacketArrived?.Invoke(Socket, 
+                                new TcpCompletedEventArgs {
+                                    Data = new System.IO.InvalidDataException(
+                                        "Packet length less than zero (corrupted message)"),
+                                    Error=true
+                                });
 
                             return;
                         }
@@ -109,13 +111,17 @@ namespace Game.Networking
                     }
                     else
                     {
-                        PacketArrived?.Invoke(this, new TcpCompletedEventArgs(dataBuffer));
+                        PacketArrived?.Invoke(Socket, new TcpCompletedEventArgs(dataBuffer));
 
                         dataBuffer = null;
                         bytesReceived = 0;
                         ReadLoop();
                     }
                 }
+            }
+            else
+            {
+                PacketArrived?.Invoke(Socket, e);
             }
         }
     }
