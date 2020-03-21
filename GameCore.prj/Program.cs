@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace Game
 {
-    static class Program
+    public static class Program
     {
         private static bool FindArg(string[] args, string arg)
         {

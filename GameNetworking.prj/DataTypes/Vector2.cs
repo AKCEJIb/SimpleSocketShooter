@@ -21,5 +21,13 @@ namespace Game.Networking
             X = x;
             Y = y;
         }
+
+        public bool InRange(Vector2 upperLeft, Vector2 bottomRight)
+        {
+            return this.X >= upperLeft.X 
+                && this.Y >= upperLeft.Y
+                && this.X <= bottomRight.X
+                && this.Y <= bottomRight.Y;
+        }
     }
 }

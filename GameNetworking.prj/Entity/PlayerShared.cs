@@ -12,7 +12,7 @@ namespace Game.Networking.Entity
     {
         public string Name { get; protected set; }
         public int Health { get; protected set; }
-
+        public bool Alive { get; protected set; }
         public override string ToString()
         {
             return "Player{" +

@@ -37,8 +37,14 @@
             this._loginPanel = new System.Windows.Forms.Panel();
             this._disconnectBtn = new System.Windows.Forms.Button();
             this._gameField = new System.Windows.Forms.Panel();
+            this._infoLabel = new System.Windows.Forms.Label();
+            this._renderZone = new System.Windows.Forms.Panel();
+            this._resurectBtn = new System.Windows.Forms.Button();
+            this._chatEnterField = new System.Windows.Forms.TextBox();
+            this._chatWindow = new System.Windows.Forms.RichTextBox();
             this._loginPanel.SuspendLayout();
             this._gameField.SuspendLayout();
+            this._renderZone.SuspendLayout();
             this.SuspendLayout();
             // 
             // _connectBtn
@@ -105,9 +111,9 @@
             // _disconnectBtn
             // 
             this._disconnectBtn.Enabled = false;
-            this._disconnectBtn.Location = new System.Drawing.Point(12, 524);
+            this._disconnectBtn.Location = new System.Drawing.Point(12, 527);
             this._disconnectBtn.Name = "_disconnectBtn";
-            this._disconnectBtn.Size = new System.Drawing.Size(87, 23);
+            this._disconnectBtn.Size = new System.Drawing.Size(173, 23);
             this._disconnectBtn.TabIndex = 5;
             this._disconnectBtn.Text = "Отключится";
             this._disconnectBtn.UseVisualStyleBackColor = true;
@@ -115,6 +121,10 @@
             // 
             // _gameField
             // 
+            this._gameField.Controls.Add(this._infoLabel);
+            this._gameField.Controls.Add(this._renderZone);
+            this._gameField.Controls.Add(this._chatEnterField);
+            this._gameField.Controls.Add(this._chatWindow);
             this._gameField.Controls.Add(this._disconnectBtn);
             this._gameField.Dock = System.Windows.Forms.DockStyle.Fill;
             this._gameField.Enabled = false;
@@ -124,13 +134,61 @@
             this._gameField.TabIndex = 6;
             this._gameField.Visible = false;
             // 
+            // _infoLabel
+            // 
+            this._infoLabel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._infoLabel.Location = new System.Drawing.Point(12, 430);
+            this._infoLabel.Name = "_infoLabel";
+            this._infoLabel.Size = new System.Drawing.Size(173, 93);
+            this._infoLabel.TabIndex = 9;
+            this._infoLabel.Text = "Справка:\r\nWASD - передвижение\r\nC - стрельба\r\nEnter - открыть/закрыть чат (если пу" +
+    "ст) + отправка сообщения\r\n";
+            // 
+            // _renderZone
+            // 
+            this._renderZone.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._renderZone.Controls.Add(this._resurectBtn);
+            this._renderZone.Location = new System.Drawing.Point(12, 12);
+            this._renderZone.Name = "_renderZone";
+            this._renderZone.Size = new System.Drawing.Size(629, 415);
+            this._renderZone.TabIndex = 8;
+            // 
+            // _resurectBtn
+            // 
+            this._resurectBtn.Enabled = false;
+            this._resurectBtn.Location = new System.Drawing.Point(263, 205);
+            this._resurectBtn.Name = "_resurectBtn";
+            this._resurectBtn.Size = new System.Drawing.Size(110, 23);
+            this._resurectBtn.TabIndex = 0;
+            this._resurectBtn.Text = "ВОЗРОДИТЬСЯ";
+            this._resurectBtn.UseVisualStyleBackColor = true;
+            this._resurectBtn.Visible = false;
+            this._resurectBtn.Click += new System.EventHandler(this.ResurectBtn_Click);
+            // 
+            // _chatEnterField
+            // 
+            this._chatEnterField.Enabled = false;
+            this._chatEnterField.Location = new System.Drawing.Point(191, 529);
+            this._chatEnterField.Name = "_chatEnterField";
+            this._chatEnterField.Size = new System.Drawing.Size(450, 20);
+            this._chatEnterField.TabIndex = 7;
+            // 
+            // _chatWindow
+            // 
+            this._chatWindow.Location = new System.Drawing.Point(191, 430);
+            this._chatWindow.Name = "_chatWindow";
+            this._chatWindow.ReadOnly = true;
+            this._chatWindow.Size = new System.Drawing.Size(451, 93);
+            this._chatWindow.TabIndex = 6;
+            this._chatWindow.Text = "";
+            // 
             // ClientForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(653, 557);
-            this.Controls.Add(this._loginPanel);
             this.Controls.Add(this._gameField);
+            this.Controls.Add(this._loginPanel);
             this.DoubleBuffered = true;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Margin = new System.Windows.Forms.Padding(2);
@@ -138,10 +196,12 @@
             this.Name = "ClientForm";
             this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "IT\'S A GAME!!!1";
+            this.Text = "SimpleSocketShooter";
             this._loginPanel.ResumeLayout(false);
             this._loginPanel.PerformLayout();
             this._gameField.ResumeLayout(false);
+            this._gameField.PerformLayout();
+            this._renderZone.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -156,6 +216,11 @@
         private System.Windows.Forms.Button _disconnectBtn;
         private System.Windows.Forms.Panel _loginPanel;
         private System.Windows.Forms.Panel _gameField;
+        private System.Windows.Forms.RichTextBox _chatWindow;
+        private System.Windows.Forms.TextBox _chatEnterField;
+        private System.Windows.Forms.Panel _renderZone;
+        private System.Windows.Forms.Label _infoLabel;
+        private System.Windows.Forms.Button _resurectBtn;
     }
 }
 

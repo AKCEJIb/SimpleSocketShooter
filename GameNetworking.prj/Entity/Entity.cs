@@ -11,6 +11,6 @@ namespace Game.Networking.Entity
     {
         public Guid Guid { get; protected set; }
         public Vector2 Position { get; protected set; }
-        public abstract void Tick();
+        public abstract bool Tick();
     }
 }

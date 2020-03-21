@@ -1,4 +1,5 @@
-﻿using Game.Networking;
+﻿using Game.Client.Entity;
+using Game.Networking;
 using Game.Networking.Entity;
 using System;
 using System.Collections.Generic;
@@ -12,21 +13,22 @@ namespace Game.Client
     public class GameClient
     {
 
-        public event Action ConnectedToServer;
+        public event Action<string,string> ConnectedToServer;
         public event Action DisconnectedFromServer;
-        public event Action PlayerUpdated;
+        public event Action<string> ChatMessageArrived;
         public event Action<string> CriticalErrorOccured;
 
         private GameTcpClient ClientSocket;
         private PacketProtocol PacketProtocol;
         private bool _connected;
-        private Queue<Vector2> _moveQueue = new Queue<Vector2>();
+        private const double TICKRATE = 1000 / 64;
+
+        private Queue<Packet> _packetQueue = new Queue<Packet>();
         private GameClient()
         {
             World = World.GetInstance();
         }
 
-       
         public World World { get; private set; }
 
         private static GameClient Instance { get; set; }
@@ -39,7 +41,6 @@ namespace Game.Client
         public void Connect(string ipPort, string plyName)
         {
             World.LocalPlayer = new PlayerSp(plyName);
-            World = World.GetInstance();
 
             ClientSocket = new GameTcpClient();
             ClientSocket.ConnectCompleted += ClientSocket_ConnectCompleted;
@@ -58,8 +59,8 @@ namespace Game.Client
             if (_connected)
             {
                 World.Players.Clear();
+                World.Bullets.Clear();
                 ClientSocket?.ShutdownAsync();
-                Console.WriteLine($"Plys: {World.Players.Count}");
             }
         }
 
@@ -75,6 +76,8 @@ namespace Game.Client
             ClientSocket.Close();
             ClientSocket = null;
             PacketProtocol = null;
+
+            _connected = false;
 
             this.DisconnectedFromServer();
         }
@@ -98,29 +101,75 @@ namespace Game.Client
 
                 World.AddPlayer(World.LocalPlayer);
 
-                this.ConnectedToServer();
+                ConnectedToServer?.Invoke(ClientSocket.RemoteEndPoint.ToString(), World.LocalPlayer.Name);
 
                 _connected = true;
             }
             else
             {
-                CriticalErrorOccured($"Удалённый сервер не отвечает! {e.Data}");
+                CriticalErrorOccured($"Произошла критическая ошибка!\n{((Exception)e.Data).Message}");
             }
         }
-        public void MovePlayer(Vector2 pos)
+
+        private void LimitPacketCount()
         {
-            _moveQueue.Enqueue(pos);
-        }
-        public void SendMoveQueue()
-        {
-            while(_moveQueue.Count > 0)
+            if (_packetQueue.Count + 1 > TICKRATE)
             {
-                PacketProtocol.SendPacket(ClientSocket, new Packet
-                {
-                    Type = PacketType.PLAYER_MOVE,
-                    Content = _moveQueue.Dequeue()
-                });
+                Console.WriteLine("Packet overflow!");
+                _packetQueue.Dequeue();
             }
+        }
+
+        public void EnqueueMove(Vector2 pos)
+        {
+            LimitPacketCount();
+
+            _packetQueue.Enqueue(new Packet
+            {
+                Type = PacketType.PLAYER_MOVE,
+                Content = pos
+            });
+        }
+
+        public void EnqueueRevive()
+        {
+            LimitPacketCount();
+
+            _packetQueue.Enqueue(new Packet
+            {
+                Type = PacketType.PLAYER_REVIVE,
+                Content = null
+            });
+        }
+
+        public void EnqueueShoot(Vector2 dir)
+        {
+            LimitPacketCount();
+
+            _packetQueue.Enqueue(new Packet
+            {
+                Type = PacketType.BULLET_SHOOT,
+                Content = dir
+            });
+        }
+
+        public void SendPacketQueue()
+        {
+            while(_packetQueue.Count > 0)
+            {
+                PacketProtocol.SendPacket(ClientSocket, _packetQueue.Dequeue());
+            }
+        }
+
+        public void EnqueueChatMessage(string message)
+        {
+            LimitPacketCount();
+
+            _packetQueue.Enqueue(new Packet
+            {
+                Type = PacketType.MESSAGE_CHAT,
+                Content = $"{World.LocalPlayer.Name}: {message}\n"
+            });
         }
         private void PacketProtocol_PacketArrived(object sender, TcpCompletedEventArgs e)
         {
@@ -130,35 +179,80 @@ namespace Game.Client
                 var packet = bytePacket as Packet;
                 if (packet != null)
                 {
+                    var player = packet.Content as PlayerShared;
+                    var bullet = packet.Content as BulletShared;
+                    PlayerSp playerToUpdate = null;
+                    BulletSp bulletToUpdate = null;
+                    if(player != null)
+                        playerToUpdate = World.Players.Where(x => x.Guid == player.Guid).FirstOrDefault();
+                    if (bullet != null)
+                        bulletToUpdate = World.Bullets.Where(x => x.Guid == bullet.Guid).FirstOrDefault();
                     switch (packet.Type)
                     {
                         case PacketType.PLAYER_INFO:
-                            World.LocalPlayer.UpdatePlayer((PlayerShared)packet.Content);
+                            World.LocalPlayer.UpdatePlayer(player);
                             break;
                         case PacketType.PLAYER_STATE:
-                            var player = (PlayerShared)packet.Content;
-                            var playerToUpdate = World.Players.Where(x => x.Guid == player.Guid).FirstOrDefault();
-
+                            
                             if (playerToUpdate != null)
                             {
                                 playerToUpdate.UpdatePlayer(player);
-                                //Console.WriteLine($"Updated player {playerToUpdate.Name}:{playerToUpdate.Guid}");
                             }
                             else
                             {
                                 World.Players.Add(new PlayerSp(player));
-                                Console.WriteLine("Added new player...");
                             }
                             break;
                         case PacketType.PLAYER_DISCONNECTED:
-                            var playerDis = (PlayerShared)packet.Content;
-                            var playerToDis = World.Players.Where(x => x.Guid == playerDis.Guid).FirstOrDefault();
-
-                            if (playerToDis != null)
+  
+                            if (playerToUpdate != null)
                             {
-                                World.Players.Remove(playerToDis);
+                                World.MarkRemoved(playerToUpdate);
+                                ChatMessageArrived?.Invoke($"{playerToUpdate.Name} left server!\n");
                             }
                             
+                            break;
+
+                        case PacketType.BULLET_STATE:
+                            if (bulletToUpdate != null)
+                                bulletToUpdate.Update(bullet);
+                            else if(bullet != null)
+                            {
+                                World.Bullets.Add(new BulletSp(bullet));
+                            }
+                            break;
+
+                        case PacketType.BULLET_REMOVE:
+                            if (bulletToUpdate != null)
+                            {
+                                World.MarkRemoved(bulletToUpdate);
+                            }
+                            break;
+                        case PacketType.PLAYER_HIT:
+                            break;
+                        case PacketType.PLAYER_DEAD:
+                            ChatMessageArrived?.Invoke($"{(string)packet.Content} умирает\n");
+                            break;
+                        case PacketType.MESSAGE_CHAT:
+                            ChatMessageArrived?.Invoke((string)packet.Content);
+                            break;
+                        case PacketType.MESSAGE_SYSTEM:
+                            var sysMsg = ((string)packet.Content).Split('>');
+                            switch (sysMsg[0].ToLower())
+                            {
+                                case "connected":
+                                    ChatMessageArrived?.Invoke($"{sysMsg[1]} connected to server!\n");
+                                    break;
+                                case "msg":
+                                    ChatMessageArrived?.Invoke($"{sysMsg[1]}\n");
+                                    break;
+                                default:
+                                    ChatMessageArrived?.Invoke($"(!) UNHANDLED SYSTEM MESSAGE (!)\n");
+                                    break;
+                            }
+                            break;
+                        default:
+                            Console.WriteLine("(!) GOT UNHANDLED PACKET TYPE (!)");
                             break;
                     }
                 }
@@ -169,7 +263,7 @@ namespace Game.Client
             }
             else
             {
-                CriticalErrorOccured($"Удалённый сервер принудительно разовал соединение! {e.Data}");
+                CriticalErrorOccured($"Произошла критическая ошибка!\n{((Exception)e.Data).Message}");
             }
         }
     }

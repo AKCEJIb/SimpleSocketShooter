@@ -41,7 +41,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PlayerMp.cs" />
+    <Compile Include="Entity\BulletMp.cs" />
+    <Compile Include="Entity\PlayerMp.cs" />
     <Compile Include="GameServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

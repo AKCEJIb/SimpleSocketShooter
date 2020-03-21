@@ -1,7 +1,9 @@
 ﻿using Game.Networking;
 using Game.Networking.Entity;
+using Game.Server.Entity;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -16,14 +18,18 @@ namespace Game.Server
    
     public class GameServer
     {
+        internal const double TICKRATE = 1000 / 64;
+        internal int PlayerSpeed { get; set; } = 5;
+
         private static GameServer Instance { get; set; }
         private Timer _timer = new Timer();
+
         public static GameServer GetInstance()
         {
             return Instance ?? (Instance = new GameServer());
         }
 
-        List<ITickingEntity> _tickingEntities = new List<ITickingEntity>();
+        private List<ITickingEntity> _tickingEntities = new List<ITickingEntity>();
 
 
         internal class ClientContext
@@ -68,6 +74,7 @@ namespace Game.Server
             {
                 if (client.Value.Player.Guid == excludeGuid)
                     continue;
+
                 PacketProtocol.SendPacket(client.Key, packet);
             }
         }
@@ -131,10 +138,10 @@ namespace Game.Server
 
                 if(packet != null)
                 {
+                    var context = clients.Where(x => x.Key == clientSocket).FirstOrDefault().Value;
                     switch (packet.Type)
                     {
                         case PacketType.PLAYER_INFO:
-                            var context = clients.Where(x => x.Key == clientSocket).FirstOrDefault().Value;
                             context.Player = new PlayerMp((PlayerShared)packet.Content);
                             PacketProtocol.SendPacket(clientSocket, new Packet
                             {
@@ -142,20 +149,27 @@ namespace Game.Server
                                 Type = PacketType.PLAYER_INFO
                             });
 
+                            BroadcastPacket(new Packet
+                            {
+                                Type = PacketType.MESSAGE_SYSTEM,
+                                Content = $"connected>{context.Player.Name}"
+                            }, context.Player.Guid);
+
                             _tickingEntities.Add(context.Player);
 
                             break;
-                        case PacketType.SYSTEM_MESSAGE:
-                            break;
-                        case PacketType.CHAT_MESSAGE:
-                            break;
-                        case PacketType.PLAYER_STATE:
+                        case PacketType.MESSAGE_CHAT:
+                            BroadcastPacket(packet, Guid.Empty);
                             break;
                         case PacketType.PLAYER_MOVE:
-                            var contextMove = clients.Where(x => x.Key == clientSocket).FirstOrDefault().Value;
-                            contextMove.Player.AddPos((Vector2)packet.Content); 
+                            context.Player.AddPos((Vector2)packet.Content); 
                             break;
-                        case PacketType.BULLET_STATE:
+                        case PacketType.BULLET_SHOOT:
+                            var bullet = new BulletMp((Vector2)packet.Content, context.Player.Position, context.Player.Guid);
+                            _tickingEntities.Add(bullet);
+                            break;
+                        case PacketType.PLAYER_REVIVE:
+                            context.Player.Spawn();
                             break;
                         default:
                             break;
@@ -164,21 +178,16 @@ namespace Game.Server
             }
         }
 
-        private void Client_SendCompleted(object sender, TcpCompletedEventArgs e)
-        {
-            Console.WriteLine($"Send event, bytes sent: {(int)e.Data}");
-        }
-
         public void Start()
         {
             ServerSocket.ClientAcceptAsync();
 
-            _timer.Interval = 1000 / 64;
+            _timer.Interval = TICKRATE;
             _timer.AutoReset = true;
             _timer.Elapsed += Timer_Elapsed;
             _timer.Start();
 
-            Console.WriteLine($"Server started on {ServerSocket.LocalEndPoint}...");
+            Console.WriteLine($"Server v{typeof(GameServer).Assembly.GetName().Version} started on {ServerSocket.LocalEndPoint}...");
             Console.WriteLine("Type \"help\" to get commands list...");
 
             while (true)
@@ -191,18 +200,16 @@ namespace Game.Server
                         Console.WriteLine("Command List:");
                         Console.WriteLine("test - Send test message to all connected clients.");
                         Console.WriteLine("status - Get list of all connected clients.");
+                        Console.WriteLine("rename - Rename player with specified nickname.");
                         break;
                     case "test":
-                        foreach (KeyValuePair<GameTcpServerConnection, ClientContext> client in clients)
+                        BroadcastPacket(new Packet
                         {
-                            PacketProtocol.SendPacket(client.Key, new Packet
-                            {
-                                Content = "<TEST_MESSAGE>",
-                                Type = PacketType.SYSTEM_MESSAGE
-                            });
-                        }
+                            Content = "msg>SERVER_TEST_MESSAGE",
+                            Type = PacketType.MESSAGE_SYSTEM
+                        }, Guid.Empty);
                         break;
-                    case "setname":
+                    case "rename":
                         Console.Write("Rename player: ");
                         var oldName = Console.ReadLine();
 
@@ -234,13 +241,45 @@ namespace Game.Server
                 }
             }
         }
-
-        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        private void CalculateBulletHit(BulletMp bullet)
         {
             foreach (var entity in _tickingEntities)
             {
-                entity.Tick();
+                var player = entity as PlayerMp;
+                if(player != null)
+                {
+                    if (bullet.OwnerGuid == player.Guid)
+                        continue;
+
+                    var leftUp = new Vector2(player.Position.X - 5, player.Position.Y - 5);
+                    var rightBott = new Vector2(player.Position.X + 5, player.Position.Y + 5);
+
+                    if (bullet.Position.InRange(leftUp, rightBott)
+                        && player.Alive)
+                    {
+                        player.Hit(bullet.Damage);
+                        bullet.Delete();
+                        return;
+                    }
+                       
+                }
             }
+        }
+        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            //var sw = new Stopwatch();
+            //sw.Start();
+            //sw.Restart();
+            foreach (var entity in _tickingEntities)
+            {
+                var bullet = entity as BulletMp;
+                if (bullet != null)
+                    CalculateBulletHit(bullet);
+                if (!entity.Tick()) _tickingEntities.Remove(entity);
+            }
+            //sw.Stop();
+
+            //Console.WriteLine($"Packets sent for: {sw.Elapsed.TotalMilliseconds}");
         }
     }
 }

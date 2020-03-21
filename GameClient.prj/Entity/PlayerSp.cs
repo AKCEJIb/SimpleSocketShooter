@@ -7,7 +7,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game.Client
+namespace Game.Client.Entity
 {
     [Serializable]
     public class PlayerSp : PlayerShared
@@ -20,8 +20,8 @@ namespace Game.Client
         }
         public PlayerSp(string name, int health, Vector2 pos)
         {
-            Name = name;
-            Health = health;
+            Name     = name;
+            Health   = health;
             Position = pos;
         }
 
@@ -31,14 +31,16 @@ namespace Game.Client
             Health      = ply.Health;
             Position    = ply.Position;
             Guid        = ply.Guid;
+            Alive       = ply.Alive;
         }
 
-        public void UpdatePlayer(PlayerShared plyInfo)
+        public void UpdatePlayer(PlayerShared ply)
         {
-            Name        = plyInfo.Name;
-            Health      = plyInfo.Health;
-            Position    = plyInfo.Position;
-            Guid        = plyInfo.Guid;
+            Name        = ply.Name;
+            Health      = ply.Health;
+            Position    = ply.Position;
+            Guid        = ply.Guid;
+            Alive       = ply.Alive;
         }
 
         public void UpdatePos(Vector2 vec)
@@ -51,9 +53,10 @@ namespace Game.Client
             Name = newName;
         }
 
-        public override void Tick()
+        public override bool Tick()
         {
             // pass...
+            return true;
         }
     }
 }

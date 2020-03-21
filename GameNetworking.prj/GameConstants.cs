@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Game.Networking.Entity
+namespace Game.Networking
 {
-    public interface ITickingEntity
+    public class GameConstants
     {
-        bool Tick();
+        public const string GAME_VERSION = "1.0.1.1";
     }
 }

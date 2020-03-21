@@ -51,6 +51,10 @@
       <Project>{98d77c5b-824c-4c29-a105-b1c068aab3b9}</Project>
       <Name>Game.Client</Name>
     </ProjectReference>
+    <ProjectReference Include="..\GameNetworking.prj\Game.Networking.csproj">
+      <Project>{2037d184-ba2a-494c-9083-ba6898dfe528}</Project>
+      <Name>Game.Networking</Name>
+    </ProjectReference>
     <ProjectReference Include="..\GameServer.prj\Game.Server.csproj">
       <Project>{A3B1E7E0-83A9-457F-890E-7FE6C801037A}</Project>
       <Name>Game.Server</Name>

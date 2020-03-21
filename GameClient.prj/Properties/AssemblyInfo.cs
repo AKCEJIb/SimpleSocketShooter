@@ -4,23 +4,23 @@ using System.Runtime.InteropServices;
 
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
-// связанных со сборкой.
-[assembly: AssemblyTitle("SimpleSocketShooter")]
-[assembly: AssemblyDescription("A simple shooter on winforms that using socket connection")]
+// связанные со сборкой.
+[assembly: AssemblyTitle("SocketShooterClientLib")]
+[assembly: AssemblyDescription("Socket shooter client library")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("AxeleratorStudio")]
-[assembly: AssemblyProduct("SimpleSocketShooter")]
+[assembly: AssemblyProduct("SocketShooterClientLib")]
 [assembly: AssemblyCopyright("AxeleratorStudio ©  2020")]
-[assembly: AssemblyTrademark("AxeleratorStudio")]
+[assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
 // Установка значения False для параметра ComVisible делает типы в этой сборке невидимыми
 // для компонентов COM. Если необходимо обратиться к типу в этой сборке через
-// COM, следует установить атрибут ComVisible в TRUE для этого типа.
+// COM, задайте атрибуту ComVisible значение TRUE для этого типа.
 [assembly: ComVisible(false)]
 
 // Следующий GUID служит для идентификации библиотеки типов, если этот проект будет видимым для COM
-[assembly: Guid("98d77c5b-824c-4c29-a105-b1c068aab3b9")]
+[assembly: Guid("2037d184-ba2a-494c-9083-ba6898dfe528")]
 
 // Сведения о версии сборки состоят из указанных ниже четырех значений:
 //
