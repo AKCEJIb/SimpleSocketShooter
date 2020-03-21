@@ -15,6 +15,7 @@
  `S` - Move down  
  `D` - Move right  
  `C` - Shoot
+ `Enter` - To start chatting
  
  
  
