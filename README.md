@@ -1,5 +1,6 @@
 # SimpleSocketShooter
-[![time tracker](https://wakatime.com/badge/github/AKCEJIb/SimpleSocketShooter.svg)](https://wakatime.com/badge/github/AKCEJIb/SimpleSocketShooter)
+[![time tracker](https://wakatime.com/badge/github/AKCEJIb/SimpleSocketShooter.svg)](https://wakatime.com/badge/github/AKCEJIb/SimpleSocketShooter)  
+  
 [Release v1.0.1.1 DOWNLOAD!](https://github.com/AKCEJIb/SimpleSocketShooter/releases/download/v1.0.1.1/SimpleSocketShooter.zip)
 ---
 ## Game Info
